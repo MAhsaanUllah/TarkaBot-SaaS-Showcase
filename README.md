@@ -12,9 +12,9 @@
 
 </div>
 
-BistroFlow AI is a production-grade, multi-tenant restaurant management SaaS built specifically for Pakistani restaurants. Customers place orders directly via WhatsApp in Roman Urdu or English — no app download required.
+TARKABOT is a production-grade, multi-tenant restaurant management SaaS built specifically for Pakistani restaurants. Customers place orders directly via WhatsApp in Roman Urdu or English — no app download required.
 
-🌐 **Live Demo:** [bistroflow.vercel.app](https://bistroflow.vercel.app)
+🌐 **Live Demo:** [TARKABOT(https://tarkabot.online)
 
 🎯 The Problem
 Pakistani restaurants rely on WhatsApp for orders — but managing them manually causes:
@@ -27,7 +27,7 @@ Manual billing errors
 BistroFlow AI solves all of this in one platform.
 
 ✨ What Makes It Different
-| Feature            | BistroFlow AI                    | Traditional POS          |
+| Feature            | TARKABOT                         | Traditional POS          |
 |:-------------------|:---------------------------------|:-------------------------|
 | Order channel      | WhatsApp (customers already use it) | Dedicated app required |
 | Language support   | Roman Urdu + English             | English only             |
