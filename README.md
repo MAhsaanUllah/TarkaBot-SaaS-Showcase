@@ -1,4 +1,4 @@
-# 🍽️ BistroFlow AI — WhatsApp-Native Restaurant Operating System
+# 🍽️ TARKABOT — WhatsApp-Native Restaurant Operating System
 
 <div align="center">
 
