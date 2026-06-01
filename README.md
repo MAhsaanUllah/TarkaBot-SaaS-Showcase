@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/Title.png" alt="TarkaBot Banner" width="100%">
+</div>
+
 # 🍽️ TARKABOT — AI-Powered WhatsApp Restaurant Operating System (SaaS)
 
 <div align="center">
