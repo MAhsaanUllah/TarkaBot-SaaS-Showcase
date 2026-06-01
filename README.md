@@ -32,38 +32,9 @@ Built over 3 months, this project evolved from a simple chatbot into a highly se
 
 ## 🏗️ System Architecture
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    CUSTOMER (WhatsApp)                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Evolution API Webhook
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│        DigitalOcean Droplet (Dockerized Backend)         │
-│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ Webhook API │  │  Roman Urdu  │  │   DeepSeek    │  │
-│  │ Global Keys │  │  RapidFuzz   │  │  AI Fallback  │  │
-│  └─────────────┘  └──────────────┘  └───────────────┘  │
-│  ┌─────────────┐  ┌──────────────┐                      │
-│  │ Redis Cache │  │  Supabase    │                      │
-│  │ Rate Limits │  │ REST Client  │                      │
-│  │ Anti-Replay │  │              │                      │
-│  └─────────────┘  └──────────────┘                      │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              Supabase (PostgreSQL + Realtime)            │
-│   11 tables · 33 migrations · Row Level Security (RLS)  │
-│   RPC stored procedures · PostgreSQL triggers           │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Supabase Realtime (WebSocket)
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│              React 18 Dashboard (Vercel)                 │
-│  Kitchen Kanban · POS Terminal · Sales Analytics        │
-│  Dynamic PDF Receipts · Tenant Admin Console            │
-└─────────────────────────────────────────────────────────┘
-```
+<div align="center">
+  <img src="assets/architecture.png" alt="System Architecture Diagram" width="100%">
+</div>
 
 ---
 
