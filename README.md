@@ -50,7 +50,7 @@ Built over 3 months, this project evolved from a simple chatbot into a highly se
 
 | Landing Page | Dashboard |
 |:---:|:---:|
-| Coming Soon | Coming Soon |
+| ![Landing Page](assets/Landing_Page.gif) | Coming Soon |
 
 | POS Terminal | Menu Catalog |
 |:---:|:---:|
