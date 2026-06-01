@@ -14,7 +14,7 @@
 
 TARKABOT is a production-grade, multi-tenant restaurant management SaaS built specifically for Pakistani restaurants. Customers place orders directly via WhatsApp in Roman Urdu or English — no app download required.
 
-🌐 **Live Demo:** [TARKABOT(https://tarkabot.online)
+🌐 **Live Demo:** [TARKABOT](https://tarkabot.online)
 
 🎯 The Problem
 Pakistani restaurants rely on WhatsApp for orders — but managing them manually causes:
@@ -103,19 +103,21 @@ Full multi-turn conversation with memory per customer session.
 
 ## 📸 Screenshots
 
+*New Updated UI Screenshots Coming Soon!*
+
 <div align="center">
 
 | Landing Page | Dashboard |
 |:---:|:---:|
-| ![Landing Page](assets/landing-page.png) | ![Dashboard](assets/dashboard.png) |
+| Coming Soon | Coming Soon |
 
 | POS Terminal | Menu Catalog |
 |:---:|:---:|
-| ![POS Terminal](assets/pos.png) | ![Menu Catalog](assets/menu-catalog.png) |
+| Coming Soon | Coming Soon |
 
 | Print Settings | Sales Report |
 |:---:|:---:|
-| ![Print Settings](assets/Print-Setting.png) | ![Sales Report](assets/Sales-report.png) |
+| Coming Soon | Coming Soon |
 
 </div>
 
@@ -170,7 +172,8 @@ Full multi-turn conversation with memory per customer session.
 
 
 🛠️ Full Tech Stack
-Backend
+
+**Backend**
 | Component   | Technology                        |
 |:------------|:----------------------------------|
 | Framework   | FastAPI (Python 3.10+)            |
@@ -180,7 +183,8 @@ Backend
 | Security    | HMAC-SHA256, Redis replay guard   |
 | Cache       | Redis (rate limiting)             |
 | HTTP Client | httpx                             |
-Frontend
+
+**Frontend**
 | Component  | Technology                  |
 |:-----------|:----------------------------|
 | Framework  | React 18 + TypeScript 5.6  |
@@ -190,7 +194,8 @@ Frontend
 | State      | TanStack React Query 5      |
 | Realtime   | Supabase Realtime           |
 | PDF        | jsPDF + autotable           |
-Infrastructure
+
+**Infrastructure**
 | Component | Platform                            |
 |:----------|:------------------------------------|
 | Frontend  | Vercel (auto-deploy from GitHub)    |
@@ -198,6 +203,7 @@ Infrastructure
 | Database  | Supabase PostgreSQL                 |
 | Auth      | Supabase Auth (Email + Google OAuth)|
 | WhatsApp  | Meta Cloud API + Twilio fallback    |
+
 ## 🗄️ Database
 
 - 11 core tables with full RLS isolation
@@ -266,6 +272,6 @@ AI Automation & Full-Stack Engineer | Building production systems for Pakistani 
 
 <div align="center">
 
-**BistroFlow AI — Bringing AI-powered order management to every Pakistani restaurant, one WhatsApp message at a time. 🇵🇰**
+**Tarkabot — Bringing AI-powered order management to every Pakistani restaurant, one WhatsApp message at a time. 🇵🇰**
 
 </div>
