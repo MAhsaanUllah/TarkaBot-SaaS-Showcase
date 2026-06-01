@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![DigitalOcean](https://img.shields.io/badge/DigitalOcean-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white)](https://digitalocean.com)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
-[![WhatsApp](https://img.shields.io/badge/WhatsApp_Cloud_API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://developers.facebook.com/docs/whatsapp)
+[![Evolution API](https://img.shields.io/badge/Evolution_API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/EvolutionAPI/evolution-api)
 
 </div>
 
@@ -25,7 +25,7 @@ Built over 3 months, this project evolved from a simple chatbot into a highly se
 - **Custom NLP Pipeline:** Developed a highly optimized, dual-layer AI parser. It uses `RapidFuzz` for lightning-fast tokenization and exact/fuzzy menu matching (≥60% confidence), drastically reducing LLM latency and costs. It gracefully falls back to a **DeepSeek AI LLM** for complex, multi-item, or ambiguous natural language queries.
 - **True Multi-Tenancy:** Engineered strict data isolation using **PostgreSQL Row Level Security (RLS)** across 11 relational tables. Tenants cannot cross-pollinate data, even at the raw database query level.
 - **Real-Time Distributed State:** Implemented **Supabase Realtime (WebSockets)** to instantly push confirmed WhatsApp orders to the React frontend (Kanban Kitchen Board) without manual polling, reducing database load.
-- **Enterprise-Grade Webhook Security:** Meta Cloud API webhooks are secured using **HMAC-SHA256 signature verification**. Replay attacks and DDoS vectors are mitigated via a **Redis** cache layer deployed securely via Docker internal networks on a DigitalOcean Droplet.
+- **Enterprise-Grade Webhook Security:** **Evolution API** webhooks are secured via Global API Keys and internal origin validation. Replay attacks and DDoS vectors are mitigated via a **Redis** cache layer deployed securely via Docker internal networks on a DigitalOcean Droplet.
 - **POS & Thermal Printing:** Integrated `jsPDF` and `jspdf-autotable` to dynamically generate and print 80mm POS thermal receipts directly from the browser without dedicated driver installations.
 
 ---
@@ -36,13 +36,13 @@ Built over 3 months, this project evolved from a simple chatbot into a highly se
 ┌─────────────────────────────────────────────────────────┐
 │                    CUSTOMER (WhatsApp)                   │
 └──────────────────────┬──────────────────────────────────┘
-                       │ Meta Cloud API Webhook
+                       │ Evolution API Webhook
                        ▼
 ┌─────────────────────────────────────────────────────────┐
 │        DigitalOcean Droplet (Dockerized Backend)         │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │ Webhook API │  │  Roman Urdu  │  │   DeepSeek    │  │
-│  │ HMAC-SHA256 │  │  RapidFuzz   │  │  AI Fallback  │  │
+│  │ Global Keys │  │  RapidFuzz   │  │  AI Fallback  │  │
 │  └─────────────┘  └──────────────┘  └───────────────┘  │
 │  ┌─────────────┐  ┌──────────────┐                      │
 │  │ Redis Cache │  │  Supabase    │                      │
