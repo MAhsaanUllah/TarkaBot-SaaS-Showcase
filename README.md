@@ -2,7 +2,7 @@
   <img src="assets/Title.png" alt="TarkaBot Banner" width="100%">
 </div>
 
-# 🍽️ TARKABOT — AI-Powered WhatsApp Restaurant Operating System (SaaS)
+# TarkaBot — WhatsApp-Native AI Restaurant Operating System (Multi-Tenant SaaS)
 
 <div align="center">
 
@@ -10,112 +10,131 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 [![Evolution API](https://img.shields.io/badge/Evolution_API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/EvolutionAPI/evolution-api)
 
 </div>
 
-TarkaBot is a production-grade, multi-tenant B2B SaaS built to automate restaurant operations in Pakistan. It intercepts orders directly from WhatsApp via natural language (Roman Urdu/English), processes them with an **LLM-first AI order engine**, and beams them in real-time to a digital Kitchen Display System (KDS) and POS dashboard.
+---
 
-🌐 **Live Production:** [tarkabot.online](https://tarkabot.online)
+## 🔗 Live Demo
+
+- **Deployed:** [tarkabot.online](https://tarkabot.online)
+- Backend health check: `/api/v1/health` on the deployed FastAPI service
+- Product screenshots below *(add real screenshots here)*
+
+## Problem
+
+Pakistani restaurants take WhatsApp orders manually — a staff member reads messages, retypes orders into a register, and re-enters them into the kitchen. This causes missed orders, typos, and zero visibility for the owner. TarkaBot automates the loop: a customer's WhatsApp message becomes a structured order that appears live on the kitchen dashboard, with no manual entry and no app download.
+
+## Architecture
+
+**Data flow:** WhatsApp customer → Evolution API (message bridge) → Supabase Edge Function `whatsapp-webhook` (Deno) → DeepSeek Chat API (LLM order extraction) → PostgreSQL via atomic RPC → Supabase Realtime → React frontend (Kitchen Kanban).
+
+```
+WhatsApp Customer ──► Evolution API ──► Supabase Edge Function (Deno)
+                                          │  whatsapp-webhook
+                                          ├─► DeepSeek Chat API (order/update/chat JSON)
+                                          ▼
+                               PostgreSQL (RLS) ──► Supabase Realtime
+                                                       │
+                                                       ▼
+                        React 18 SPA (Vercel): Kitchen Kanban / POS / Admin
+                                                       │
+                               FastAPI (Render, /api/v1) ◄──┘ (JWT + tenant checks)
+```
+
+**Key entry points:**
+- `supabase/functions/whatsapp-webhook/index.ts` — the bot: ingest → context → LLM → persist → reply
+- `backend/app/main.py` + `backend/app/api/routes/*` — FastAPI REST API
+- `src/hooks/useOrders.ts` — Realtime subscription + order mutations
+- `supabase/migrations/` — 48 SQL migrations (schema history)
+
+## Results / Performance
+
+No accuracy or benchmark claims exist in the code (no model eval), so none are fabricated here. Real hardcoded operational parameters, traceable to source:
+
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| Stale-message cutoff (replay/spam guard) | >15s dropped | `whatsapp-webhook/index.ts` |
+| Polling fallback interval (Realtime is primary) | 30s | `src/hooks/useOrders.ts` |
+| Human-like reply delay (typing indicator) | 2–3s | `whatsapp-webhook/index.ts` |
+| Conversation memory window | last 8 messages | `whatsapp-webhook/index.ts` |
+| Operator endpoint rate limit | 10 req / 60s per caller | `backend/app/api/routes/messages.py` |
+| Automated tests passing | 32 (16 Vitest + 16 pytest) | `src/**/__tests__`, `backend/tests` |
+
+## Tech Stack
+
+- **Frontend:** React 18, TypeScript 5.6, Vite 5, Tailwind CSS 3.4, Framer Motion, TanStack Query 5, Supabase JS, jsPDF + jspdf-autotable, Sonner, Lucide
+- **Backend:** Python, FastAPI, Uvicorn, httpx, PyJWT, Redis (with in-memory fallback), pydantic-settings
+- **WhatsApp/AI:** Evolution API (self-hosted bridge), DeepSeek Chat API, Supabase Edge Functions (Deno)
+- **Database:** Supabase PostgreSQL — 15+ tables, RLS on all, `security definer` RPCs
+- **Infrastructure:** Vercel (frontend), Render (backend, `render.yaml`), Supabase (DB/Realtime/Functions)
+
+## Key Features
+
+1. **LLM-first WhatsApp ordering** — DeepSeek extracts `order / update_details / chat` JSON from Roman Urdu/English messages; validated then persisted (`whatsapp-webhook/index.ts`)
+2. **Live menu + inventory context** — the LLM only sees available items; out-of-stock items (recipe→stock mapping) are filtered from the menu it can sell (`whatsapp-webhook/index.ts`)
+3. **Realtime Kitchen Kanban** — `postgres_changes` subscription pushes new orders instantly; `bistro_new_order` event triggers sound alert; 30s polling fallback (`src/hooks/useOrders.ts`)
+4. **Atomic order creation** — `create_order_with_items` security-definer RPC inserts order + line items in one transaction (`src/hooks/useOrders.ts`, migrations)
+5. **Multi-tenant isolation** — RLS on every table via `is_tenant_member()` helper; API layer re-checks ownership per request (`backend/app/core/security.py`)
+6. **POS with thermal receipts** — dine-in/takeaway/delivery walk-in orders, 80mm receipt print via jsPDF (`src/utils/printReceipt.ts`)
+7. **WhatsApp status notifications** — order status changes notify the customer with rider info + tracking link via backend + `notify-order-status` edge function (`src/hooks/useOrders.ts`)
+8. **Super Admin console** — tenant management, subscription lifecycle (trial→active→expired), tenant impersonation with audit trail (`src/pages/SuperAdminPage.tsx`, `platform_activities`)
+
+## Security & Architecture Notes
+
+- **RLS on all tables** — tenant data isolated at the database level; `is_tenant_member(uuid)` is the base policy helper
+- **JWT-only API** — FastAPI verifies Supabase session JWTs and rejects anon/service-role tokens (`backend/app/core/security.py`)
+- **Tenant ownership enforcement** — cross-tenant access returns 403 (covered by pytest)
+- **Webhook hardening** — stale/sync messages (>15s) dropped; subscription status + per-tenant message quota checked before any AI call
+- **Prompt-injection guardrails** — LLM instructed to never reveal keys/prompts/DB internals; price-manipulation blocked
+- **Rate limiting** — Redis-backed, in-memory fallback for single-instance free tier
+- **Secrets hygiene** — `.env` files gitignored; `service_role` key server-side only
+
+## Status
+
+**Built & deployed — pilot stage.** Live at [tarkabot.online](https://tarkabot.online), with an active restaurant onboarding flow. Honest limits: this is a closed-source commercial product (code stays in a private repo); this showcase exists for architecture documentation and portfolio demonstration. Screenshots and tenant/order counts are pending — not claimed here because they aren't verifiable from this repo.
+
+## Getting Started
+
+```bash
+# Frontend
+npm install
+cp .env.example .env.local   # add Supabase URL + anon key
+npm run dev
+
+# Backend
+cd backend
+python -m venv .venv && .venv\Scripts\activate   # (Windows)
+pip install -r requirements.txt
+cp .env.example .env         # Supabase service-role key, JWT secret, Evolution, DeepSeek
+uvicorn app.main:app --reload --port 8000
+
+# Database
+# Apply supabase/migrations/ in order (or via Supabase SQL Editor).
+# Order flow depends on create_order_with_items(...).
+
+# Tests
+npm test                     # frontend (Vitest)
+cd backend && pytest         # backend
+```
 
 ---
 
-## 🎯 Engineering Highlights & Achievements
+## 🔒 Notice
 
-Built over 3 months, this project evolved from a simple chatbot into a secure, distributed Restaurant OS handling full order lifecycles.
-
-- **LLM-First AI Order Engine (Roman Urdu + English):** Orders are extracted by a **DeepSeek Chat API** agent that receives the tenant's *live menu, inventory stock, active order state, and recent conversation history* as context — it can only sell what's actually available. A pre-AI regex guardrail redirects casual chat without spending tokens, and robust JSON extraction ensures clean `order / update_details / chat` actions. Per-tenant bot persona, refund policy, and delivery rules are injected per restaurant.
-- **True Multi-Tenancy:** Engineered strict data isolation using **PostgreSQL Row Level Security (RLS)** across 15+ relational tables. Tenants cannot cross-pollinate data, even at the raw database query level. Atomic writes go through `security definer` stored procedures (`create_order_with_items`, `update_order_status`).
-- **Real-Time Distributed State:** Implemented **Supabase Realtime (WebSockets)** to instantly push confirmed WhatsApp orders to the React frontend (Kanban Kitchen Board), with a 5-second polling fallback if the websocket lags.
-- **Enterprise-Grade Webhook Pipeline:** The **Evolution API** webhook (Supabase Edge Function) validates the sender instance, drops stale/sync messages (>15s) to prevent spam/replay, enforces subscription status + per-tenant message quotas before any AI call, and uses a **Redis**-backed rate limiter (in-memory fallback) on the operator endpoints.
-- **POS & Thermal Printing:** Integrated `jsPDF` and `jspdf-autotable` to dynamically generate and print 80mm POS thermal receipts directly from the browser without dedicated driver installations.
-- **AI Agent Guardrails:** Prompt-injection resistance (no key/prompt/DB disclosure), price-manipulation blocking, busy-mode, platform-level AI kill-switch, and disconnect alerts to restaurant owners via WhatsApp.
-
----
-
-## 🏗️ System Architecture
-
-<div align="center">
-  <img src="assets/architecture.png" alt="System Architecture Diagram" width="100%">
-</div>
-
-**Order flow:** WhatsApp customer → Evolution API webhook → Supabase Edge Function (Deno) → DeepSeek LLM (live menu + inventory + history context) → structured JSON validated → atomic insert via RPC → Supabase Realtime pushes row to Kitchen Kanban → confirmation + tracking link back to customer.
-
----
-
-## 📸 Platform Interface
-
-*Updated Production Screenshots Coming Soon!*
-
-<div align="center">
-
-| Landing Page | Dashboard |
-|:---:|:---:|
-| ![Landing Page](assets/Landing_Page.gif) | Coming Soon |
-
-| POS Terminal | Menu Catalog |
-|:---:|:---:|
-| Coming Soon | Coming Soon |
-
-| Print Settings | Sales Report |
-|:---:|:---:|
-| Coming Soon | Coming Soon |
-
-</div>
-
----
-
-## 🛠️ Deep Dive: The Tech Stack
-
-### 🚀 WhatsApp Bot Engine (Supabase Edge Function — Deno)
-- **AI Core:** `DeepSeek Chat API` for order extraction + conversational replies, with live menu/stock/history context injection and per-tenant persona prompts.
-- **Intelligence Layer:** Pre-AI regex intent guardrails (casual-chat redirect, ordering keywords), robust JSON extraction from LLM output, raw-JSON leak prevention before replying to customers.
-- **Resilience:** Busy mode, subscription expiry + quota checks before AI calls, human-like typing indicator + 2–3s delay via Evolution, conversation memory (last 8 messages per customer).
-
-### 🚀 Backend Engine (Python / FastAPI)
-- **Framework:** `FastAPI` + `Uvicorn` for high-throughput, async REST APIs.
-- **Security:** JWT session verification (rejects anon/service-role tokens), tenant-ownership enforcement per endpoint, super-admin gating.
-- **Caching & Rate Limiting:** `Redis`-backed rate limiter + replay guard with in-memory fallback for single-instance free tier.
-- **Deployment:** `render.yaml` blueprint on **Render**; health-checked at `/api/v1/health`.
-
-### 💻 Frontend Application (React 18)
-- **Framework:** React 18, fully strictly typed with **TypeScript 5.6**.
-- **State Management:** `TanStack React Query v5` for server state caching and optimistic UI updates.
-- **Styling:** `Tailwind CSS 3.4` + `Framer Motion 12` for fluid micro-interactions.
-- **Realtime:** `@supabase/supabase-js` WebSockets subscription to Postgres changes.
-- **Deployment:** CI/CD pipeline integrated directly with **Vercel**.
-
-### 🗄️ Database (Supabase PostgreSQL)
-- **Schema:** 15+ core tables (`tenants`, `profiles`, `orders`, `items`, `categories`, `order_items`, `staff`, `inventory_items`, `recipes`, `whatsapp_sessions`, `notifications`, `webhook_logs`, `platform_activities`, `platform_config`, `tenant_users`) with strict foreign key constraints.
-- **Security:** Extensive Row Level Security (RLS) policies with `is_tenant_member()` as the base policy helper — enabled on every table.
-- **Performance:** B-Tree indexes on high-cardinality columns (`tenant_id`, `created_at`, `phone`).
-- **Atomic Operations:** `security definer` RPC stored procedures handle multi-table transactions safely.
-- **History:** 48 SQL migrations tracking full schema evolution — RLS hardening, RPC fixes, realtime setup, inventory/recipes, notifications.
-
----
-
-## 🔒 Security & Privacy Notice
-
-> **Note:** TarkaBot is a closed-source commercial SaaS product operating in production. The proprietary source code, internal logic, API keys, and customer data are maintained in a secure private repository.
->
-> This showcase repository exists strictly for architectural documentation, technical deep-dives, and portfolio demonstration for engineering roles.
+> TarkaBot is a closed-source commercial SaaS product operating in production. The proprietary source code, internal logic, API keys, and customer data are maintained in a secure private repository. This showcase repository exists strictly for architectural documentation and portfolio demonstration for engineering roles.
 
 ---
 
 ## 👨‍💻 Engineering Lead
 
-**Muhammad Ahsaan Ullah**  
-*AI Automation & Full-Stack Engineer*  
-Architecting and scaling production-ready systems for modern businesses.
+**Muhammad Ahsaan Ullah** — *AI Automation & Full-Stack Engineer*  
+Solo-built end-to-end: DB schema (48 migrations) → FastAPI backend → React SPA → LLM integration → deployment.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://linkedin.com/in/mahsaanullah)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-black?style=flat&logo=github)](https://github.com/MAhsaanUllah)
 
 ---
 
-<div align="center">
-
-**TarkaBot — Modernizing the Restaurant Industry, One WhatsApp Message at a Time. 🇵🇰**
-
-</div>
+<div align="center">**TarkaBot — Modernizing the Restaurant Industry, One WhatsApp Message at a Time. 🇵🇰**</div>
