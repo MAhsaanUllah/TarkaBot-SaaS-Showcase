@@ -123,7 +123,7 @@ cd backend && pytest         # backend
 
 ## 🔒 Notice
 
-> TarkaBot is a closed-source commercial SaaS product operating in production. The proprietary source code, internal logic, API keys, and customer data are maintained in a secure private repository. This showcase repository exists strictly for architectural documentation and portfolio demonstration for engineering roles.
+> TarkaBot is a closed-source commercial SaaS product currently in its pilot stage. The proprietary source code, internal logic, API keys, and customer data are maintained in a secure private repository. This showcase repository exists strictly for architectural documentation and portfolio demonstration for engineering roles.
 
 ---
 
