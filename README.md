@@ -149,10 +149,10 @@ All API credentials, service-role keys, and webhook HMAC secrets remain strictly
 | --- | --- |
 | Web application | React 18, TypeScript 5.6, Vite 5, Tailwind CSS, TanStack Query |
 | Backend API | FastAPI, Python 3.11, Pydantic, PyJWT, Redis |
-| WhatsApp and AI | Evolution API, Supabase Edge Functions (Deno), DeepSeek V4.1 Flash, Gemini 3.0 Flash (Fallback), RapidFuzz |
-| Data platform | Supabase PostgreSQL 15, Auth, Realtime (WebSockets), Row Level Security |
-| Receipts and reports | jsPDF, Thermal KOT printing, Customer bill printing, PDF exports |
-| Deployment | Vercel (Frontend), Render (Backend API), Supabase (Database & Functions) |
+| WhatsApp and AI | Evolution API, Supabase Edge Functions (Deno), DeepSeek (deepseek-chat) for order extraction, Anthropic Claude API for menu photo scanning |
+| Data platform | Supabase PostgreSQL 17, Auth, Realtime (WebSockets), Row Level Security |
+| Receipts and reports | jsPDF, thermal KOT printing, customer bill printing, PDF exports |
+| Deployment | Vercel (frontend), Render (backend API), Supabase (database and edge functions) |
 
 ## Verification
 
@@ -160,21 +160,50 @@ The automated test suites cover authentication, tenant authorization, messaging,
 
 | Suite | Verified result | Coverage examples | Command |
 | --- | ---: | --- | --- |
-| Frontend | **74 tests passing** across 20 files | Billing flows, order tracking, POS receipts, cart recovery, totals, sanitization | `npm test` |
-| Backend | **36 tests passing** | Authentication, tenant access, messaging, notifications, rate limiting | `pytest backend/tests` |
-| **Total** | **110 tests passing** | Full end-to-end multi-tenant platform coverage | `All green` |
+| Frontend | 74 tests passing across 20 files | Billing flows, order tracking, POS receipts, cart recovery, totals, sanitization | `npm test` |
+| Backend | 36 tests passing | Authentication, tenant access, messaging, notifications, rate limiting | `pytest backend/tests` |
+| **Total** | **110 tests passing** | Unit and route-level tests across frontend and backend | — |
 
-The production frontend compiles with zero TypeScript errors and passes production bundling:
+The production frontend compiles with zero TypeScript errors and builds successfully:
 
 ```bash
 npm run build
 ```
 
+Known gap: most backend tests use mocked database responses. Integration tests against a real Postgres instance are the next addition, so constraint and RPC behavior is verified end to end.
+
+## Engineering log
+
+Recent fixes found by auditing the system against its own documentation.
+
+### Atomic WhatsApp order creation
+
+- **Problem:** POS orders were created through the `create_order_with_items` Postgres function in one transaction. WhatsApp orders were written in two separate calls (order header, then line items) with a manual cleanup if the second call failed. A crash between the two calls could leave an order with no items.
+- **Fix:** A new service-role-only function, `create_whatsapp_order_with_items`, wraps the same RPC and applies the tenant's delivery fee from the database inside the same transaction. The webhook now makes one call. Prices are resolved from the catalog in the database, never taken from the model or the client. Ingredient stock is deducted by a trigger on `order_items`, so it runs inside the same transaction.
+- **Design choice:** A separately named wrapper instead of adding parameters to the existing RPC. That RPC already has two overloads, PostgREST resolves overloads poorly, and a new parameter would have let dashboard clients send their own delivery fee.
+- **Status:** Implemented on a branch, being verified with a live test order before release.
+
+### Dashboard count mismatch
+
+- **Problem:** The "Active Orders" card counted only new and preparing, while the kitchen board's columns covered eight statuses. The card showed 6 while the board showed 13.
+- **Fix:** One shared status map in `types/order.ts` now drives both the board columns and the card, so they can't drift apart again. Orders with status `payment_received`, which previously didn't appear in any column, now show in New. The revenue card was relabeled "Completed Sales Today" to match what it actually counts.
+- **Status:** Live.
+
+## Roadmap
+
+Planned work, not yet in production:
+
+- **Model fallback:** Retry order extraction on a second provider (Gemini Flash) when the primary model errors or times out, instead of asking the customer to call the restaurant.
+- **Rule-based parsing for simple orders:** Fuzzy matching (RapidFuzz) of item names and quantities for clear messages like "2 zinger 1 fries", so the model is only called for ambiguous ones. This cuts cost and latency.
+- **Structured output:** JSON mode and a strict schema on model responses, with one retry on parse failure before human handoff.
+- **Stock check at order time:** Reject or confirm with the customer when an item's ingredient stock is zero, not only when its availability flag is off.
+- **Integration tests:** Run the RPC and RLS tests against a disposable Postgres container in CI.
+
 ## Project status
 
 TarkaBot is deployed at [tarkabot.online](https://tarkabot.online) and is currently in private beta. Manual bank-transfer billing is in use while automated payment integration is prepared.
 
-This public repository contains documentation and product architecture only. The application source code remains private.
+This public repository contains documentation and product architecture only. The application source code remains private; a technical walkthrough can be arranged on request.
 
 ## About the developer
 
